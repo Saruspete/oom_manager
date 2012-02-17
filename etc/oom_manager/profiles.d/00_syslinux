@@ -1,0 +1,8 @@
+user=root	score=0
+user=mysql	score=2
+
+# Master sshd process
+user=root process=sshd score=-12
+
+# Kernel process
+#user=root process=\[.+\] score=-5
