@@ -17,8 +17,8 @@
 
 RETVAL=0
 
-#PATH_BASE="/usr/local"
-PATH_BASE="/home/amahieux/devel/system/oomkiller"
+PATH_BASE="/usr/local"
+#PATH_BASE="/home/amahieux/devel/system/oomkiller"
 PATH_PID="${PATH_BASE}/var/run/oom_manager.pid"
 PATH_LOGS="${PATH_BASE}/var/log/oom_manager.log"
 
