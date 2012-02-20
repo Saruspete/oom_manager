@@ -163,7 +163,7 @@ while [ $LOOP_MAX -eq -1 -o $LOOP_COUNT -lt $LOOP_MAX ] ; do
 	}
 
 	# Regen the scores
-	oom_getprocess | $BIN_SU -c "$PATH_SCORING \"$PATH_PROFILES\"" $USER_SCORING | while read _PID _ADJ; do
+	oom_getprocess | $BIN_SU -s /bin/ksh -c "$PATH_SCORING \"$PATH_PROFILES\"" $USER_SCORING | while read _PID _ADJ; do
 		
 		# Get the old adjustement
 		_OADJ="$(oom_getadj $_PID)"
