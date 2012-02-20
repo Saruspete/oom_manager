@@ -56,14 +56,20 @@ typeset -i LOOP_DAEMON=0
 typeset -i EXEC_OOM=0
 typeset -i EXEC_HELP=0
 
+PATH_LOGFILE="/var/log/oom_manager.log"
 PATH_PROFILES=profiles.d
 PATH_SCORING="$(dirname $0)/oom_scoring.sh"
 USER_SCORING=nobody
 
 
 typeset -i OPTS_ERR=0
-while getopts ":s:p:c:dthf:" opt; do
+while getopts ":s:p:l:c:dthf:" opt; do
 	case $opt in
+
+	# Set the log output file
+	l)
+		PATH_LOGFILE=$OPTARG
+		;;
 
 	# Set the sleep time between 2 runs
 	s)
@@ -124,6 +130,17 @@ done
 [ "$USER" != "root" ] && {
 	echo "Fatal error [$0] Current \$USER is not root"
 	exit 1
+}
+
+# If the output file does not exists, try to craete it
+[ ! -e "$PATH_LOGFILE" ] && {
+	touch "$PATH_LOGFILE" > /dev/null || {
+		oom_logerr "[main] Cannot create logfile $PATH_LOGFILE"
+		exit 1
+	}
+
+	# Export for oom_libs.sh
+	LOG_FILE="$PATH_LOGFILE"
 }
 
 
