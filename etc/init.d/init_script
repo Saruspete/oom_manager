@@ -44,7 +44,8 @@ _proc_ispidrunning () {
 	}
 
 	# Process is our daemon
-	grep "$EXEC_SNAME" /proc/$PID/comm >/dev/null || {
+#	grep -Eao '^[/a-zA-Z0-9_\-\s]+' /proc/$PID/cmdline | grep -i "$EXEC_NAME" > /dev/null || {
+	grep "$EXEC_SNAME" /proc/$PID/cmdline >/dev/null || {
 		return 1
 	}
 
