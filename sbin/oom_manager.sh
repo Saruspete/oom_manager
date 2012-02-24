@@ -49,13 +49,16 @@ function oom_newscore {
 
 # Opts management
 
+# Int vars
 typeset -i LOOP_SLEEP=60
 typeset -i LOOP_MAX=1
 typeset -i LOOP_COUNT=0
 typeset -i LOOP_DAEMON=0
 typeset -i EXEC_OOM=0
 typeset -i EXEC_HELP=0
+typeset -i EXEC_VERB=0
 
+# String vars
 PATH_LOGFILE="/var/log/oom_manager.log"
 PATH_PROFILES=profiles.d
 PATH_SCORING="$(dirname $0)/oom_scoring.sh"
@@ -63,7 +66,7 @@ USER_SCORING=nobody
 
 
 typeset -i OPTS_ERR=0
-while getopts ":s:p:l:c:dthf:" opt; do
+while getopts ":s:p:l:c:dtvhf:" opt; do
 	case $opt in
 
 	# Set the log output file
@@ -104,7 +107,10 @@ while getopts ":s:p:l:c:dthf:" opt; do
 	h)
 		EXEC_HELP=1
 		;;
-
+	# Verbosity
+	v)
+		EXEC_VERB=EXEC_VERB+1
+		;;
 	# Wrong opt...
 	\?)
 		echo "Invalid option -$OPTARG"
@@ -112,6 +118,11 @@ while getopts ":s:p:l:c:dthf:" opt; do
 		;;
 	esac
 done
+
+# Exporting verbose level for oom_libs.sh
+[ $EXEC_VERB -ge 2 ] && export LOG_TO_DBG=1
+[ $EXEC_VERB -ge 1 ] && export LOG_TO_OUT=1
+
 
 # If daemonizing, infinite loop (and FUUUU apaple)
 [ $LOOP_DAEMON -eq 1 ] && {
@@ -139,10 +150,11 @@ done
 		exit 1
 	}
 
-	# Export for oom_libs.sh
-	LOG_FILE="$PATH_LOGFILE"
 }
 
+# Export for oom_libs.sh
+export LOG_FILE="$PATH_LOGFILE"
+oom_logdbg "[main] Setting logfile to $PATH_LOGFILE"
 
 # Checking the oom_scoring
 [ ! -x "$PATH_SCORING" ] && {
@@ -187,9 +199,7 @@ while [ $LOOP_MAX -eq -1 -o $LOOP_COUNT -lt $LOOP_MAX ] ; do
 		
 		# If there is a diff, set the new adj
 		[ "$_OADJ" != "$_ADJ" ] && {
-			
 			oom_setadj $_PID $_ADJ
-			oom_log "[SET] $_PID set from $_OADJ to $_ADJ"
 		}
 	done
 	

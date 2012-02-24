@@ -39,7 +39,9 @@ BIN_AWK="/usr/bin/awk"
 PROFILES=""
 for PDIR in $PROFILESDIRS; do
 	for PFILE in $PDIR/*; do 
-		PROFILES="$PROFILES $PFILE"
+		[ -e "$PFILE" ] && {
+			PROFILES="$PROFILES $PFILE"
+		}
 	done
 done
 

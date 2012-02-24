@@ -2,8 +2,9 @@
 
 
 LOG_TO_OUT="${LOG_TO_OUT:-0}"
+LOG_TO_DBG="${LOG_TO_DBG:-0}"
 LOG_TO_FILE="${LOG_TO_FILE:-1}"
-LOG_FILE="${FILE_LOGERR:-/var/log/oom_manager.log}"
+LOG_FILE="${LOG_FILE:-/var/log/oom_manager.log}"
 
 
 BIN_PS=/bin/ps
@@ -12,20 +13,36 @@ BIN_SED=/bin/sed
 BIN_CAT=/bin/cat
 BIN_SU=/bin/su
 
+
+function oom_logdate {
+	date "+%y-%m-%d_%H:%M:%S"
+}
+
 function oom_logerr {
-	DATE="$(date +%y-%m-%d_%H:%M:%S)"
-	[ "$LOG_TO_OUT" = "1" ]  && { echo "[$DATE] [ERR] $@" > /dev/stderr ; }
+	DATE="$(oom_logdate)"
+	[ "$LOG_TO_OUT" = "1" ]  && { echo "[$DATE] [ERR] $@" ; }
 	[ "$LOG_TO_FILE" = "1" ] && { echo "[$DATE] [ERR] $@" >> $LOG_FILE ; }
 }
 
+function oom_logdbg {
+	[ "$LOG_TO_DBG" = "0" ] && return 0;
+
+	DATE="$(oom_logdate)"
+	[ "$LOG_TO_OUT" = "1" ]  && { echo "[$DATE] [DBG] $@" >&2 ; }
+	[ "$LOG_TO_FILE" = "1" ] && { echo "[$DATE] [DBG] $@" >> $LOG_FILE ; }
+
+}
+
 function oom_log {
-	DATE="$(date +%y-%m-%d_%H:%M:%S)"
+	DATE="$(oom_logdate)"
 	[ "$LOG_TO_OUT" = "1" ]  && { echo "[$DATE] [STD] $@" ; }
 	[ "$LOG_TO_FILE" = "1" ] && { echo "[$DATE] [STD] $@" >> $LOG_FILE ; }
 }
 
 
 function oom_setadj {
+	
+	oom_logdbg "[oom_setadj] Calling oom_setadj with \"$1\" and \"$2\""
 
 	[ -z "$1" ] && { 
 		oom_logerr "[oom_setadj] Wrong PID arg given \"$1\""
@@ -37,19 +54,38 @@ function oom_setadj {
 	
 	PID=$1
 	SCORE=$2
-	[ ! -d "/proc/$PID/" ] && {
+	[ -e "/proc/$PID/" ] || {
 		oom_logerr "[oom_setadj] Path does not exists /proc/$PID/"
 		return 1
 	}
 	
+	OSCORE="$($BIN_CAT /proc/$PID/oom_adj)"
+	
 	# Set the score
+	oom_logdbg "[oom_setadj] Setting adj of $PID to $SCORE"
 	echo "$SCORE" > /proc/$PID/oom_adj
 
-	# Check if scoring was successful
-	[ "$($BIN_CAT /proc/$PID/oom_adj)" -eq "$SCORE" ] && return 0
+	# Check if scoring was successfull
+	NSCORE="$($BIN_CAT /proc/$PID/oom_adj 2>/dev/null)"
+	oom_logdbg "[oom_setadj] New adj of $PID is $NSCORE"
+	
+	# Good ? okay nice
+	[ -n "$NSCORE" ] && {
+		[ "$NSCORE" -eq "$SCORE" ] && {
+			oom_log "[oom_setadj] $PID set from $OSCORE to $NSCORE"
+			return 0
+		} || {
+			# SHITSHITSHITSHITSHIT
+			oom_logerr "[oom_setadj] $PID adj is $NSCORE was $OSCORE but should be $SCORE"
+			return 1
+		}
+	} || {
+		# Empty score ? Process was killed. Don't bother me
+		oom_logdbg "[oom_setadj] $PID got an empty new score. Maybe killed in the meantime ?"
+		return 0
+	}
 
-	# Not returned yet ? SHITSHITSHITSHITSHIT
-	return 1
+
 }
 
 function oom_getadj {	
@@ -71,8 +107,9 @@ function oom_start {
 
 function oom_getprocess {
 	
-	$BIN_PS -ewww -o pid,ppid,user,uid,ruid,gid,rgid,args | 
-	$BIN_SED -e 's/  */ /g' -e 's/^ *//'
+	$BIN_PS -ewww -o pid,ppid,user,uid,ruid,gid,rgid,args | # Get the fields
+	$BIN_SED -e 's/  */ /g' -e 's/^ *//' |					# Rewrite output
+	$BIN_AWK '($1 != PROCINFO["ppid"] && $2 != PROCINFO["ppid"]) { print }'	# remove myself
 #	$BIN_AWK '{print substr($0, index($1,$7)) }'
 	
 }

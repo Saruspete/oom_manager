@@ -18,7 +18,7 @@
 RETVAL=0
 
 PATH_BASE="/usr/local"
-#PATH_BASE="/home/amahieux/devel/system/oomkiller"
+PATH_BASE="/home/amahieux/devel/system/oomkiller"
 PATH_PID="${PATH_BASE}/var/run/oom_manager.pid"
 PATH_LOGS="${PATH_BASE}/var/log/oom_manager.log"
 
@@ -26,7 +26,6 @@ EXEC_NAME="OOM Score Manager"
 EXEC_PATH="${PATH_BASE}/sbin/oom_manager.sh"
 EXEC_SNAME="${EXEC_PATH##$(dirname $EXEC_PATH)/}"
 EXEC_ARGS="-d -p ${PATH_BASE}/etc/oom_manager/profiles.d -l $PATH_LOGS"
-
 
 
 _proc_ispidrunning () {
@@ -64,8 +63,6 @@ _proc_isrunning () {
 
 _proc_run () {
 	
-	#echo "$EXEC_PATH $EXEC_ARGS"
-#	$EXEC_PATH $EXEC_ARGS 1>/dev/null 2>/dev/null &
 	$EXEC_PATH $EXEC_ARGS &
 	PID=$!
 	
@@ -178,9 +175,6 @@ restart () {
 	start
 }
 
-zap () {
-	_proc_setpid
-}
 
 status () {
 	PID="$(_proc_getpid)"
@@ -226,6 +220,10 @@ status () {
 	}
 }
 
+zap () {
+	_proc_setpid
+}
+
 install () {
 
 	TMP_PATH_PID="$(dirname $PATH_PID)"
@@ -238,6 +236,22 @@ install () {
 	return 0
 }
 
+reset () {
+	
+	typeset -i NBRST=0
+	for ADJFILE in /proc/*/oom_adj; do
+		grep -v 0 $ADJFILE > /dev/null && {
+			echo "0" > $ADJFILE 
+			NBRST=NBRST+1
+		}
+	done
+	
+	echo -n $NBRST Processes oom_adj reset to 0 
+	echo_success
+	echo
+
+	return 0
+}
 
 case "$1" in 
   start)  
@@ -255,12 +269,15 @@ case "$1" in
   status) 
         status
         ;;
+  reset)
+  		reset
+		;;
   install)
   		install
 		;;
 
   *)
-        echo $"Usage: $0 {start|stop|zap|status|restart|install}"
+        echo $"Usage: $0 {start|stop|zap|status|restart|reset|install}"
         exit 1
 		;;
 esac
