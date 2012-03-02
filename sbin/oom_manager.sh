@@ -153,7 +153,6 @@ done
 	oom_getmemorytotal | while read MAXMEM MAXSWP; do
 		EXEC_PREOOMMEMVAL=$(oom_transformunit "$EXEC_PREOOMMEMSTR" "$MAXMEM" )
 		EXEC_PREOOMSWPVAL=$(oom_transformunit "$EXEC_PREOOMSWPSTR" "$MAXSWP" )
-		echo $EXEC_PREOOMMEMVAL
 		[ $EXEC_PREOOMMEMVAL -gt $MAXMEM ] && {
 			oom_logerr "[main] memory trigger is greater than max memory : $EXEC_PREOOMMEMVAL > $MAXMEM"
 			OPTS_ERR=OPTS_ERR+1
@@ -236,7 +235,7 @@ while [ $LOOP_MAX -eq -1 -o $LOOP_COUNT -lt $LOOP_MAX ] ; do
 			# Are the limits reached
 			[ $(($TRIG_MEM*$TRIG_SWP)) -ne 0 ] && {
 				oom_log "[main] Auto triggering killer : Mem $FREEMEM / $EXEC_PREOOMMEMVAL Swp $FREESWP / $EXEC_PREOOMSWPVAL"
-		#		oom_trigger
+				oom_trigger
 			}
 		done
 	}
