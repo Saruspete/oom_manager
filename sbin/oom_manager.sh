@@ -148,15 +148,13 @@ done
 }
 
 # Checking the Pre-OOM trigger value
-[ -n "$EXEC_PREOOMMEMSTR" -a -n "$EXEC_PREOOMSWPSTR"  ] && {
+[[ ( -n "$EXEC_PREOOMMEMSTR" ) || ( -n "$EXEC_PREOOMSWPSTR" ) ]] && {
 	
 	oom_getmemorytotal | while read MAXMEM MAXSWP; do
-		EXEC_PREOOMMEMVAL=$(oom_transformunit $EXEC_PREOOMMEMSTR $MAXMEM )
-		EXEC_PREOOMSWPVAL=$(oom_transformunit $EXEC_PREOOMSWPSTR $MAXSWP )
+		EXEC_PREOOMMEMVAL=$(oom_transformunit "$EXEC_PREOOMMEMSTR" "$MAXMEM" )
+		EXEC_PREOOMSWPVAL=$(oom_transformunit "$EXEC_PREOOMSWPSTR" "$MAXSWP" )
 	done
-	echo Mem : $EXEC_PREOOMMEMVAL
-	echo Swp : $EXEC_PREOOMSWPVAL
-
+	oom_logdbg "[main] Setting pre-trigger limits to mem $EXEC_PREOOMMEMVAL / swp $EXEC_PREOOMSWPVAL"
 	EXEC_PREOOM=1
 }
 
@@ -214,9 +212,14 @@ while [ $LOOP_MAX -eq -1 -o $LOOP_COUNT -lt $LOOP_MAX ] ; do
 		
 		# Get the current limit
 		oom_getmemoryusage | while read FREEMEM FREESWP; do 
+			TRIG_MEM=0
+			TRIG_SWP=0
 			# If we are under the trigger limit
-			[ $EXEC_PREOOMMEMVAL -gt 0 -a $FREEMEM -lt $EXEC_PREOOMMEMVAL ] && 
-			[ $EXEC_PREOOMSWPVAL -gt 0 -a $FREESWP -lt $EXEC_PREOOMSWPVAL ] && {
+			[[ ( $EXEC_PREOOMMEMVAL -eq 0 ) || ( $FREEMEM -lt $EXEC_PREOOMMEMVAL ) ]] && TRIG_MEM=1
+			[[ ( $EXEC_PREOOMSWPVAL -eq 0 ) || ( $FREESWP -lt $EXEC_PREOOMSWPVAL ) ]] && TRIG_SWP=1
+			
+			# Are the limits reached
+			[ $(($TRIG_MEM*$TRIG_SWP)) -ne 0 ] && {
 				oom_log "[main] Auto triggering killer : Mem $FREEMEM / $EXEC_PREOOMMEMVAL Swp $FREESWP / $EXEC_PREOOMSWPVAL"
 				oom_trigger
 			}
