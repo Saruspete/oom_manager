@@ -65,8 +65,8 @@ function oom_transformunit {
 
 	echo $STR | $BIN_AWK -v REF=$VAL 'BEGIN { IGNORECASE=1; coef=1 }
 	{
-		if (match($1, /^[0-9]+[bkmgte%]?$/)) {
-			ind = match($1, /[bBkKmMgGtTeE%]/);
+		if (match($1, /^[0-9]+[bkmg%]?$/)) {
+			ind = match($1, /[bBkKmMgG%]/);
 			if (ind > 0) {
 				unit=substr($1, ind, 1);
 				val=substr($1, 0, ind);
@@ -75,12 +75,13 @@ function oom_transformunit {
 				val=$1
 			}
 			switch (unit) {
-				case "e":   coef*=1024
-				case "t":   coef*=1024
 				case "g":   coef*=1024
 				case "m":   coef*=1024
-				case "k":   coef*=1024
-				default:	break;
+				case "k":   coef*=1
+							break;
+				case "b":
+				default:	coef/=1024;
+							break;
 				case "%":   
 					if (!REF) {	exit(253); }
 					coef=1
@@ -181,14 +182,14 @@ function oom_getprocess {
 }
 
 function oom_getmemorytotal {
-	$BIN_AWK 'BEGIN{ ORS=" "} /^(MemTotal|SwapTotal):/{print $2*1024} END { print "\n" }' /proc/meminfo
+	$BIN_AWK 'BEGIN{ ORS=" "} /^(MemTotal|SwapTotal):/{print $2} END { print "\n" }' /proc/meminfo
 }
 
 function oom_getmemoryusage {
 
 	# Get the SHM
-	SHM=$($BIN_IPCS -m| $BIN_AWK 'BEGIN{total=0} /^0x/ { total+=$5} END { print total}')
-	oom_logdbg "[oom_getmemoryusage] Found $SHM bytes of SHM"
+	SHM=$($BIN_IPCS -m| $BIN_AWK 'BEGIN{total=0} /^0x/ { total+=$5} END { print int(total/1024)}')
+	oom_logdbg "[oom_getmemoryusage] Found $SHM KB of SHM"
 
 	# Here the deal :
 	# If we are in HugePages, the SHM is pre-allocated by kernel and is "anon"
@@ -202,14 +203,14 @@ function oom_getmemoryusage {
 		/^(SwapFree):/ { swap=$2 }
 		END {
 			if (huge > 1) {
-				print (free+cache-huge)*1024
+				print (free+cache-huge)
 			} else {
-				print ((free+cache)*1024)-shm
+				print (free+cache-shm)
 			}
-			print swap*1024
+			print swap
 		}' /proc/meminfo)
 			
-	oom_logdbg "[oom_getmemoryusage] Found $TOTAL free bytes"
+	oom_logdbg "[oom_getmemoryusage] Found $TOTAL free mem/swp KB"
 	
 	echo $TOTAL
 	return 0
