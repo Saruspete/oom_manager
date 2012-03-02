@@ -1,1 +1,2 @@
 user=oracle score=5
+user=oracle process=ora_ score=0

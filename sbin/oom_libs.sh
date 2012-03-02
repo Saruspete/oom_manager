@@ -1,6 +1,7 @@
 #!/bin/ksh
 
 
+
 LOG_TO_OUT="${LOG_TO_OUT:-0}"
 LOG_TO_DBG="${LOG_TO_DBG:-0}"
 LOG_TO_FILE="${LOG_TO_FILE:-1}"
@@ -12,6 +13,18 @@ BIN_AWK=/usr/bin/awk
 BIN_SED=/bin/sed
 BIN_CAT=/bin/cat
 BIN_SU=/bin/su
+BIN_IPCS=/usr/bin/ipcs
+
+
+# Pre-check for bins
+$BIN_AWK --version | while read line; do
+	[[ $line != GNU\ Awk* ]] && {
+		echo "Expecting GNU Awk. Stopping" > /dev/stderr
+		exit 1
+	}
+	break;
+done
+
 
 
 function oom_logdate {
@@ -38,6 +51,59 @@ function oom_log {
 	[ "$LOG_TO_OUT" = "1" ]  && { echo "[$DATE] [STD] $@" ; }
 	[ "$LOG_TO_FILE" = "1" ] && { echo "[$DATE] [STD] $@" >> $LOG_FILE ; }
 }
+
+
+function oom_transformunit {
+
+	[ $# -lt 1 -o $# -gt 2 ] && {
+		oom_logerr "[oom_transformunit] Calling with wrong number of ags : \"$@\""
+		return 1
+	}
+	
+	STR=$1
+	VAL=$2
+
+	echo $STR | $BIN_AWK -v REF=$VAL 'BEGIN { IGNORECASE=1; coef=1 }
+	{
+		if (match($1, /^[0-9]+[bkmgte%]?$/)) {
+			ind = match($1, /[bBkKmMgGtTeE%]/);
+			if (ind > 0) {
+				unit=substr($1, ind, 1);
+				val=substr($1, 0, ind);
+			} else {
+				unit="";
+				val=$1
+			}
+			switch (unit) {
+				case "e":   coef*=1024
+				case "t":   coef*=1024
+				case "g":   coef*=1024
+				case "m":   coef*=1024
+				case "k":   coef*=1024
+				default:	break;
+				case "%":   
+					if (!REF) {	exit(253); }
+					coef=1
+					val = REF/100*val
+			}
+			print int(val*coef)
+		}
+	}'
+	AWKRET=$?
+
+	[ $AWKRET -eq 253 ] && {
+		oom_logerr "[oom_transformunit] Calling a percent value \"$STR\" without ref value"
+		return 1
+	}
+	[ $AWKRET -ne 0 ] && {
+		oom_logerr "[oom_transformunit] error in AWK, code $AWKRET..."
+		return 1
+	}
+	
+	return 0
+}	
+
+
 
 
 function oom_setadj {
@@ -95,12 +161,12 @@ function oom_getadj {
 	}
 	PID=$1
 	
-	$BIN_CAT /proc/$PID/oom_adj
+	$BIN_CAT /proc/$PID/oom_adj 2>/dev/null
 	return $?
 }
 
-function oom_start {
-	oom_log "[main] Launching manual OOM Killer" 	
+function oom_trigger {
+	oom_log "[oom_trigger] Launching manual OOM Killer" 	
 	echo "f" > /proc/sysrq-trigger
 	
 }
@@ -114,3 +180,37 @@ function oom_getprocess {
 	
 }
 
+function oom_getmemorytotal {
+	$BIN_AWK 'BEGIN{ ORS=" "} /^(MemTotal|SwapTotal):/{print $2*1024} END { print "\n" }' /proc/meminfo
+}
+
+function oom_getmemoryusage {
+
+	# Get the SHM
+	SHM=$($BIN_IPCS -m| $BIN_AWK 'BEGIN{total=0} /^0x/ { total+=$5} END { print total}')
+	oom_logdbg "[oom_getmemoryusage] Found $SHM bytes of SHM"
+
+	# Here the deal :
+	# If we are in HugePages, the SHM is pre-allocated by kernel and is "anon"
+	# If we are not, the SHM is allocated on the fly and is in "cache"
+	
+	# Find the total real free memory
+	TOTAL=$($BIN_AWK -v shm=$SHM 'BEGIN{free=0; cache=0; huge=1; swap=0; ORS=" "} 
+		/^MemFree:/{free=$2}
+		/^(Cached|Buffers):/ {cache+=$2} 
+		/^(HugePages_Total|Hugepagesize):/ {huge *= $2}
+		/^(SwapFree):/ { swap=$2 }
+		END {
+			if (huge > 1) {
+				print (free+cache-huge)*1024
+			} else {
+				print ((free+cache)*1024)-shm
+			}
+			print swap*1024
+		}' /proc/meminfo)
+			
+	oom_logdbg "[oom_getmemoryusage] Found $TOTAL free bytes"
+	
+	echo $TOTAL
+	return 0
+}
