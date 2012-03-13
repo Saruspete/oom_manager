@@ -74,18 +74,28 @@ function oom_transformunit {
 				unit="";
 				val=$1
 			}
-			switch (unit) {
-				case "g":   coef*=1024
-				case "m":   coef*=1024
-				case "k":   coef*=1
-							break;
-				case "b":
-				default:	coef/=1024;
-							break;
-				case "%":   
-					if (!REF) {	exit(253); }
-					coef=1
-					val = REF/100*val
+# Nice, switch isnt enabled on gawk RHEL... Very nice dudes !
+#			switch (unit) {
+#				case "g":   coef*=1024
+#				case "m":   coef*=1024
+#				case "k":   coef*=1
+#							break;
+#				case "b":
+#				default:	coef/=1024;
+#							break;
+#				case "%":   
+#					if (!REF) {	exit(253); }
+#					coef=1
+#					val = REF/100*val
+#			}
+			if (unit == "b" || unit == "") { coef = 1/1024; }
+			if (unit == "k") { coef = 1; }
+			if (unit == "m") { coef = 1024; }
+			if (unit == "g") { coef = 1048576; }
+			if (unit == "%") {
+				if (!REF) { exit(253); }
+				coef = 1;
+				val = REF/100*val;
 			}
 			print int(val*coef)
 		}
