@@ -19,6 +19,26 @@ OOM_SCRIPT="$0"
 
 
 function oom_usage {
+	oom_getmemoryusage | ( read FREEMEM FREESWP
+	FREEMEMTRG="N/A"
+	FREESWPTRG="N/A"
+	[ $EXEC_PREOOMMEMVAL -gt 0 ] && {
+		[ $FREEMEM -lt $EXEC_PREOOMMEMVAL ] && {
+			FREEMEMTRG="TRIGGER !" 
+		} || {
+			FREEMEMTRG="OK, $(($FREEMEM - $EXEC_PREOOMMEMVAL)) free"
+		}
+	}
+
+	[ $EXEC_PREOOMSWPVAL -gt 0 ] && {
+		[ $FREESWP -lt $EXEC_PREOOMSWPVAL ] && {
+			FREESWPTRG="TRIGGER !" 
+		} || {
+			FREESWPTRG="OK, $(($FREESWP - $EXEC_PREOOMSWPVAL)) free"
+		}
+	}
+
+
 	echo "Linux OOM-Killer Manager v$OOM_VERSION"
 	echo "Fix OOM_Scores of selected processes"
 	echo 
@@ -28,17 +48,27 @@ function oom_usage {
 	echo " -s =  Seconds to sleep between process check (current: $LOOP_SLEEP) "
 	echo " -c =  Max number of loops. -1 for infinite (current: $LOOP_MAX)"
 	echo " -d    Daemon mode (equivalent to \"-c -1\")"
-	echo " -l =  Set the log file (current: $PATH_LOGFILE)"
+	echo
+	echo "Logging:"
+	echo " -v    Increase the verbosity level (current: $EXEC_VERB)"
+	echo " -l =  Log to file (current: $PATH_LOGFILE)"
+	echo " -L =  Log to syslog (current: $LOG_TO_SYS Facility : $LOG_SYS_FACILITY)"
 	echo 
+	echo "Scoring:"
 	echo " -S =  Program to execute for getting the scores (current: $PATH_SCORING)"
 	echo " -p =  Add a path for profiles (current: $PATH_PROFILES)"
 	echo 
 	echo " -t    Trigger the OOM Killer feature (data displayed in /var/log/messages)"
-	echo " -f =  Free memory needed before triggering a kill (current: $EXEC_PREOOM $EXEC_PREOOMVAL)"
-	echo "       Can use a unit of K,M,G,T,%"
+	echo
+	echo "Pre-oom triggering. "
+	echo "You can use a unit of K,M,G,T,%"
+	echo " -f =  Free RAM needed  (current: $FREEMEM  min: $EXEC_PREOOMMEMVAL  status: $FREEMEMTRG)"
+	echo " -F =  Free SWAP needed (current: $FREESWP  min: $EXEC_PREOOMSWPVAL  status: $FREESWPTRG)"
 	echo 
+	echo "Help:"
 	echo " -h   Display this help and used values"
 	echo
+	)
 }
 
 
@@ -66,12 +96,19 @@ EXEC_PREOOMSWPSTR=""
 
 
 typeset -i OPTS_ERR=0
-while getopts ":s:S:p:l:c:f:F:dtvh" opt; do
+while getopts ":s:S:p:l:c:f:F:Ldtvh" opt; do
 	case $opt in
 
 	# Logfile : Set the log output file
 	l)
 		PATH_LOGFILE=$OPTARG
+		;;
+	# Log : Syslog facility to send to
+	L)
+		LOG_TO_SYS=1
+		[ -n "$OPTARG" ] && {
+			LOG_SYS_FACILITY="$OPTARG"
+		}
 		;;
 
 	# sleep : Set the sleep time between 2 runs
@@ -141,12 +178,6 @@ done
 }
 
 
-# Need halp ?
-[ $EXEC_HELP -eq 1 ] && {
-		oom_usage
-		exit 0;
-}
-
 # Checking the Pre-OOM trigger value
 [[ ( -n "$EXEC_PREOOMMEMSTR" ) || ( -n "$EXEC_PREOOMSWPSTR" ) ]] && {
 	
@@ -172,6 +203,11 @@ done
 	}
 }
 
+# Need halp ?
+[ $EXEC_HELP -eq 1 ] && {
+		oom_usage
+		exit 0;
+}
 
 #
 # For next commands, we need to be root.

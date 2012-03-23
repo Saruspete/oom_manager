@@ -1,12 +1,13 @@
 #!/bin/ksh
 
-
-
 LOG_TO_OUT="${LOG_TO_OUT:-0}"
 LOG_TO_DBG="${LOG_TO_DBG:-0}"
 LOG_TO_FILE="${LOG_TO_FILE:-1}"
-LOG_FILE="${LOG_FILE:-/var/log/oom_manager.log}"
+LOG_TO_SYS="${LOG_TO_SYS:-0}"
 
+LOG_FILE="${LOG_FILE:-/var/log/oom_manager.log}"
+LOG_SYS_FACILITY="kern"
+LOG_SYS_TAG="javamine"
 
 BIN_PS=/bin/ps
 BIN_AWK=/usr/bin/awk
@@ -14,6 +15,7 @@ BIN_SED=/bin/sed
 BIN_CAT=/bin/cat
 BIN_SU=/bin/su
 BIN_IPCS=/usr/bin/ipcs
+BIN_LOGGER=/usr/bin/logger
 
 
 # Pre-check for bins
@@ -25,8 +27,6 @@ $BIN_AWK --version | while read line; do
 	break;
 done
 
-
-
 function oom_logdate {
 	date "+%y-%m-%d_%H:%M:%S"
 }
@@ -35,6 +35,7 @@ function oom_logerr {
 	DATE="$(oom_logdate)"
 	[ "$LOG_TO_OUT" = "1" ]  && { echo "[$DATE] [ERR] $@" ; }
 	[ "$LOG_TO_FILE" = "1" ] && { echo "[$DATE] [ERR] $@" >> $LOG_FILE ; }
+	[ "$LOG_TO_SYS" = "1" ]  && { $BIN_LOGGER -p "${LOG_SYS_FACILITY}.err" -t "${LOG_SYS_TAG}" "$@" ; }
 }
 
 function oom_logdbg {
@@ -43,6 +44,7 @@ function oom_logdbg {
 	DATE="$(oom_logdate)"
 	[ "$LOG_TO_OUT" = "1" ]  && { echo "[$DATE] [DBG] $@" >&2 ; }
 	[ "$LOG_TO_FILE" = "1" ] && { echo "[$DATE] [DBG] $@" >> $LOG_FILE ; }
+	[ "$LOG_TO_SYS" = "1" ]  && { $BIN_LOGGER -p "${LOG_SYS_FACILITY}.debug" -t "${LOG_SYS_TAG}" "$@" ; }
 
 }
 
@@ -50,6 +52,7 @@ function oom_log {
 	DATE="$(oom_logdate)"
 	[ "$LOG_TO_OUT" = "1" ]  && { echo "[$DATE] [STD] $@" ; }
 	[ "$LOG_TO_FILE" = "1" ] && { echo "[$DATE] [STD] $@" >> $LOG_FILE ; }
+	[ "$LOG_TO_SYS" = "1" ]  && { $BIN_LOGGER -p "${LOG_SYS_FACILITY}.info" -t "${LOG_SYS_TAG}" "$@" ; }
 }
 
 
