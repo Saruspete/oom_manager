@@ -212,8 +212,8 @@ done
 #
 # For next commands, we need to be root.
 #
-[ "$USER" != "root" ] && {
-	echo "Fatal error [$0] Current \$USER is not root"
+[ "$(id -au)" != "0" ] && {
+	echo "Fatal error [$0] this script must be run as root"
 	exit 1
 }
 

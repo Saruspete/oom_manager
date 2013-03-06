@@ -20,7 +20,7 @@
 #
 # #############################################################################
 
-[ "$USER" == "root" ] && {
+[ "$(id -au)" == "0" ] && {
 	echo "You must not run this script as root" > /dev/stderr
 	exit 1
 }
