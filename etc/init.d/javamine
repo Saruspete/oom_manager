@@ -41,9 +41,6 @@ EXEC_ARGS="${EXEC_ARGS:-$EXEC_ARGS_DEFAULT}"
 # And add it the added args
 EXEC_ARGS="$EXEC_ARGS $EXEC_ARGS_ADD"
 
-echo $EXEC_ARGS
-exit
-
 
 _proc_ispidrunning () {
 	
