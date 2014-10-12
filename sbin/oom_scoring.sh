@@ -72,10 +72,10 @@ $BIN_AWK -v profiles="$PROFILES" '
 	BEGIN {
 		# Read the profiles
 		split (profiles,t_profiles);
+		i=1
 		for (i_pro in t_profiles) {
 			profile=t_profiles[i_pro]
 			# Get all lines
-			i=1
 			while (getline<profile >0) {
 				if ($0~/^[\s]*$|^#/) { 
 					continue; 
