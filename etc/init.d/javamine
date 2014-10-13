@@ -6,6 +6,7 @@
 # description: OOM-Score adjuster for heavy apps
 # 
 # processname: oom_manager.sh
+# Config file: /etc/sysconfig/javamine
 #
 # By: Adrien Mahieux - adrien.mahieux-ext@socgen.com
 #
@@ -15,17 +16,30 @@
 # Source function library.
 . /etc/init.d/functions
 
+# If the configuration file exists, load it
+[ -e /etc/sysconfig/javamine ] && {
+	. /etc/sysconfig/javamine
+}
+
 RETVAL=0
 
-PATH_BASE="/usr/local"
-#PATH_BASE="/home/amahieux/devel/system/oomkiller"
+# PATH_BASE is overridable
+PATH_BASE_DEFAULT="/usr/local"
+PATH_BASE="${PATH_BASE:-$PATH_BASE_DEFAULT}"
+
 PATH_PID="${PATH_BASE}/var/run/oom_manager.pid"
 PATH_LOGS="${PATH_BASE}/var/log/oom_manager.log"
 
 EXEC_NAME="OOM Score Manager"
 EXEC_PATH="${PATH_BASE}/sbin/oom_manager.sh"
 EXEC_SNAME="${EXEC_PATH##$(dirname $EXEC_PATH)/}"
-EXEC_ARGS="-d -p ${PATH_BASE}/etc/oom_manager/profiles.d -l $PATH_LOGS"
+
+# EXEC_ARGS is overridable
+EXEC_ARGS_DEFAULT=" -p ${PATH_BASE}/etc/oom_manager/profiles.d -l $PATH_LOGS"
+# Use the overriden EXEC_ARGS if available
+EXEC_ARGS="${EXEC_ARGS:-$EXEC_ARGS_DEFAULT}"
+# And add it the added args
+EXEC_ARGS="$EXEC_ARGS $EXEC_ARGS_ADD"
 
 
 _proc_ispidrunning () {
@@ -63,7 +77,8 @@ _proc_isrunning () {
 
 _proc_run () {
 	
-	$EXEC_PATH $EXEC_ARGS &
+	# Daemonise parameter is mandatory !
+	$EXEC_PATH -d $EXEC_ARGS &
 	PID=$!
 	
 	sleep 1

@@ -1,0 +1,13 @@
+# Custom configuration for Javamine
+# You can override some variables here
+
+# PATH_BASE is the rootdir of the whole javamine tree
+#PATH_BASE="/usr/local"
+
+# EXEC_ARGS and EXEC_ARGS_ADD allows you to change the script args
+# 
+# EXEC_ARGS overrides default parameters
+# EXEC_ARGS_ADD is added to the EXEC_ARGS variable
+
+#EXEC_ARGS=""
+#EXEC_ARGS_ADD="-f 10% -F 30%"
