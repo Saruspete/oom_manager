@@ -3,12 +3,12 @@
 # #############################################################################
 # OOM Killer score manager - Javamine
 # Created to adjust Linux OOM_Killer scores
-# Adrien Mahieux <adrien.mahieux-ext@socgen.com>
+# Adrien Mahieux <adrien.mahieux@gmail.com>
 # #############################################################################
-# 
+#
 # This file is the main loop. The score is set from results returned by the
 # "PATH_SCORING" script.
-# 
+#
 # #############################################################################
 
 
