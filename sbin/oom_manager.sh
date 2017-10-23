@@ -19,10 +19,13 @@ typeset OOM_SCRIPT="$0"
 
 
 function oom_usage {
-	# Spawn everything on a subshell... but why ?
-	oom_getmemoryusage | ( read FREEMEM FREESWP
-	typeset FREEMEMTRG="N/A"
-	typeset FREESWPTRG="N/A"
+	typeset    FREEMEMTRG="N/A"
+	typeset    FREESWPTRG="N/A"
+	typeset -i FREEMEM
+	typeset -i FREESWP
+
+	# Bashism
+	read FREEMEM FREESWP < <(oom_getmemoryusage)
 	[[ $EXEC_PREOOMMEMVAL -gt 0 ]] && {
 		if [[ $FREEMEM -lt $EXEC_PREOOMMEMVAL ]]; then
 			FREEMEMTRG="TRIGGER !"
@@ -69,7 +72,7 @@ function oom_usage {
 	echo "Help:"
 	echo " -h   Display this help and used values"
 	echo
-	)
+
 }
 
 
@@ -88,12 +91,12 @@ typeset -i EXEC_PREOOMMEMVAL=0	# Minimum memory free bytes before auto trigger
 typeset -i EXEC_PREOOMSWPVAL=0	# Minimum swap free bytes before auto trigger
 
 # String vars
-PATH_LOGFILE="/var/log/oom_manager.log"
-PATH_PROFILES=profiles.d
-PATH_SCORING="$(dirname $0)/oom_scoring.sh"
-USER_SCORING=nobody
-EXEC_PREOOMMEMSTR=""
-EXEC_PREOOMSWPSTR=""
+typeset    PATH_LOGFILE="/var/log/oom_manager.log"
+typeset    PATH_PROFILES=profiles.d
+typeset    PATH_SCORING="$(dirname $0)/oom_scoring.sh"
+typeset    USER_SCORING=nobody
+typeset    EXEC_PREOOMMEMSTR=""
+typeset    EXEC_PREOOMSWPSTR=""
 
 
 typeset -i OPTS_ERR=0
@@ -182,18 +185,17 @@ done
 # Checking the Pre-OOM trigger value
 if [[ -n "$EXEC_PREOOMMEMSTR" ]] || [[ -n "$EXEC_PREOOMSWPSTR" ]]; then
 
-	oom_getmemorytotal | while read MAXMEM MAXSWP; do
-		EXEC_PREOOMMEMVAL=$(oom_transformunit "$EXEC_PREOOMMEMSTR" "$MAXMEM" )
-		EXEC_PREOOMSWPVAL=$(oom_transformunit "$EXEC_PREOOMSWPSTR" "$MAXSWP" )
-		[[ $EXEC_PREOOMMEMVAL -gt $MAXMEM ]] && {
-			oom_logerr "[main] memory trigger is greater than max memory : $EXEC_PREOOMMEMVAL > $MAXMEM"
-			OPTS_ERR=OPTS_ERR+1
-		}
-		[[ $EXEC_PREOOMSWPVAL -gt $MAXSWP ]] && {
-			oom_logerr "[main] Swap trigger is greater than max swap : $EXEC_PREOOMSWPVAL > $MAXSWP"
-			OPTS_ERR=OPTS_ERR+1
-		}
-	done
+	read MAXMEM MAXSWP < <(oom_getmemorytotal)
+	EXEC_PREOOMMEMVAL=$(oom_transformunit "$EXEC_PREOOMMEMSTR" "$MAXMEM" )
+	EXEC_PREOOMSWPVAL=$(oom_transformunit "$EXEC_PREOOMSWPSTR" "$MAXSWP" )
+	[[ $EXEC_PREOOMMEMVAL -gt $MAXMEM ]] && {
+		oom_logerr "[main] memory trigger is greater than max memory : $EXEC_PREOOMMEMVAL > $MAXMEM"
+		OPTS_ERR=OPTS_ERR+1
+	}
+	[[ $EXEC_PREOOMSWPVAL -gt $MAXSWP ]] && {
+		oom_logerr "[main] Swap trigger is greater than max swap : $EXEC_PREOOMSWPVAL > $MAXSWP"
+		OPTS_ERR=OPTS_ERR+1
+	}
 
 	# Got 0 for both is an error...
 	if [[ $EXEC_PREOOMMEMVAL -eq 0 ]] && [[ $EXEC_PREOOMSWPVAL -eq 0 ]]; then
