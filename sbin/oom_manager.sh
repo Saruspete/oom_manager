@@ -181,11 +181,14 @@ done
 	LOOP_MAX=-1
 }
 
+# Get max current values
+typeset MAXMEM
+typeset MAXSWP
+read MAXMEM MAXSWP < <(oom_getmemorytotal)
 
 # Checking the Pre-OOM trigger value
 if [[ -n "$EXEC_PREOOMMEMSTR" ]] || [[ -n "$EXEC_PREOOMSWPSTR" ]]; then
 
-	read MAXMEM MAXSWP < <(oom_getmemorytotal)
 	EXEC_PREOOMMEMVAL=$(oom_transformunit "$EXEC_PREOOMMEMSTR" "$MAXMEM" )
 	EXEC_PREOOMSWPVAL=$(oom_transformunit "$EXEC_PREOOMSWPSTR" "$MAXSWP" )
 	[[ $EXEC_PREOOMMEMVAL -gt $MAXMEM ]] && {
@@ -242,7 +245,7 @@ oom_logdbg "[main] Setting logfile to $PATH_LOGFILE"
 
 # If args parsing error, stop there before doing anything nasty
 [[ $OPTS_ERR -ne 0 ]] && {
-	oom_logerr "Errors detected in args parsing."
+	oom_logerr "$OPT_ERR Errors detected in args parsing."
 	exit 2
 }
 
@@ -258,25 +261,43 @@ oom_logdbg "[main] Setting logfile to $PATH_LOGFILE"
 
 
 # Main loop
+oom_log "[main] Starting for $LOOP_MAX loops every $LOOP_SLEEP sec"
+oom_log "[main] System has RAM:$MAXMEM KB / SWP:$MAXSWP KB"
+[[ $EXEC_PREOOM -gt 0 ]] && {
+	oom_log "[main] Will trigger pre-oom below RAM:$EXEC_PREOOMMEMVAL / SWP:$EXEC_PREOOMSWPVAL"
+}
 while [[ $LOOP_MAX -eq -1 ]] || [[ $LOOP_COUNT -lt $LOOP_MAX ]] ; do
+
+	read FREEMEM FREESWP < <(oom_getmemoryusage)
+	oom_logdbg "[main] Free RAM:$FREEMEM SWAP:$FREESWP"
 
 	# trigger the OOM before the real starvation
 	[[ $EXEC_PREOOM -gt 0 ]] && {
 
 		# Get the current limit
-		oom_getmemoryusage | while read FREEMEM FREESWP; do
-			TRIG_MEM=0
-			TRIG_SWP=0
-			# If we are under the trigger limit
-			[[ ( $EXEC_PREOOMMEMVAL -eq 0 ) || ( $FREEMEM -lt $EXEC_PREOOMMEMVAL ) ]] && TRIG_MEM=1
-			[[ ( $EXEC_PREOOMSWPVAL -eq 0 ) || ( $FREESWP -lt $EXEC_PREOOMSWPVAL ) ]] && TRIG_SWP=1
+		TRIG_MEM=0
+		TRIG_SWP=0
+		# If we are under the trigger limit
+		[[ ( $EXEC_PREOOMMEMVAL -eq 0 ) || ( $FREEMEM -lt $EXEC_PREOOMMEMVAL ) ]] && TRIG_MEM=1
+		[[ ( $EXEC_PREOOMSWPVAL -eq 0 ) || ( $FREESWP -lt $EXEC_PREOOMSWPVAL ) ]] && TRIG_SWP=1
 
-			# Are the limits reached
-			[[ $(($TRIG_MEM*$TRIG_SWP)) -ne 0 ]] && {
-				oom_log "[main] Auto triggering killer : Mem $FREEMEM / $EXEC_PREOOMMEMVAL Swp $FREESWP / $EXEC_PREOOMSWPVAL"
-				oom_trigger
+		# Are the limits reached
+		if [[ $(($TRIG_MEM*$TRIG_SWP)) -ne 0 ]]; then
+			oom_log "[main] Auto triggering killer : Mem $FREEMEM / $EXEC_PREOOMMEMVAL Swp $FREESWP / $EXEC_PREOOMSWPVAL"
+			oom_trigger
+		else
+			# Check remaining values before OOM
+			typeset -i REM_PCTMEM=$(( ($FREEMEM - $EXEC_PREOOMMEMVAL) * 100 / $MAXMEM ))
+			typeset -i REM_PCTSWP=$(( ($FREESWP - $EXEC_PREOOMSWPVAL) * 100 / $MAXSWP ))
+
+			# Show when near trigger
+			[[ $EXEC_PREOOMMEMVAL -gt 0 ]] && [[ $REM_PCTMEM -le 5 ]] && {
+				oom_log "[main] $REM_PCTMEM% RAM remaining before pre-trigger"
 			}
-		done
+			[[ $EXEC_PREOOMSWPVAL -gt 0 ]] && [[ $REM_PCTSWP -le 5 ]] && {
+				oom_log "[main] $REM_PCTSWP% SWAP remaining before pre-trigger"
+			}
+		fi
 	}
 
 	# Reload the data scoring
