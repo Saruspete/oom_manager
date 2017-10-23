@@ -21,7 +21,7 @@ typeset    BIN_LOGGER=/usr/bin/logger
 # Pre-check for bins
 $BIN_AWK --version | while read line; do
 	[[ $line != GNU\ Awk* ]] && {
-		echo "Expecting GNU Awk. Stopping" > /dev/stderr
+		echo "Expecting GNU Awk. Stopping" >&2
 		exit 1
 	}
 	break;

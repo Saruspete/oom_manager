@@ -12,7 +12,7 @@
 # #############################################################################
 # OOM Killer score profiler
 # Adrien Mahieux <adrien.mahieux@gmail.com>
-# Franck Jouvanceau <franck.jouvanceau@socgen.com>
+# Franck Jouvanceau <franck.jouvanceau@s.....n.com>
 # #############################################################################
 #
 # This file takes the output of "ps" as stdin, and a folder of profiles as
@@ -21,12 +21,12 @@
 # #############################################################################
 
 [[ "$(id -au)" == "0" ]] && {
-	echo "You must not run this script as root" > /dev/stderr
+	echo "You must not run this script as root" >&2
 	exit 1
 }
 
 [[ -z "$@" ]] && {
-	echo "No profile path given" > /dev/stderr
+	echo "No profile path given" >&2
 	exit 1
 }
 
