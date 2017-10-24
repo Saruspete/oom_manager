@@ -6,7 +6,7 @@
 # description: OOM-Score adjuster for heavy apps
 # 
 # processname: oom_manager.sh
-# Config file: /etc/sysconfig/javamine
+# Config file: /etc/sysconfig/oom_manager
 #
 # By: Adrien Mahieux - adrien.mahieux@gmail.com
 #
@@ -17,8 +17,8 @@
 . /etc/init.d/functions
 
 # If the configuration file exists, load it
-[ -e /etc/sysconfig/javamine ] && {
-	. /etc/sysconfig/javamine
+[ -e /etc/sysconfig/oom_manager ] && {
+	. /etc/sysconfig/oom_manager
 }
 
 RETVAL=0
