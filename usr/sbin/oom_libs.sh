@@ -7,7 +7,7 @@ typeset -i LOG_TO_SYS="${LOG_TO_SYS:-0}"
 
 typeset    LOG_FILE="${LOG_FILE:-/var/log/oom_manager.log}"
 typeset    LOG_SYS_FACILITY="kern"
-typeset    LOG_SYS_TAG="javamine"
+typeset    LOG_SYS_TAG="oom_manager"
 
 typeset    BIN_PS=/bin/ps
 typeset    BIN_AWK=/usr/bin/awk
