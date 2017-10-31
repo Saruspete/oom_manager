@@ -1,15 +1,17 @@
 Name:		oom_manager
-Version:	0.4
+Version:	master
 Release:	1%{?dist}
 Summary:	Configure and manage Linux Out-Of-Memory killer
 
-Group:		
+Group:		Application/System
 License:	GPL-3
 URL:		https://github.com/saruspete/oom_manager
 Source0:	https://github.com/saruspete/%{name}/archive/v%{version}.tar.gz
 
-BuildRequires:	
-Requires:	
+#BuildRequires:
+Requires:	gawk
+
+%define		debug_package %{nil}
 
 # You can try to push files in /usr/local or /opt
 %define		_prefix		/
@@ -17,7 +19,7 @@ Requires:
 
 # Systemd
 %if 0%{?fedora} || 0%{?rhel} >= 7 || 0%{?suse_version} >= 1140
-%define		with_systemd
+%define		with_systemd	1
 
 %define		my_scriptlet_post	%{systemd_post}   %{name}.service
 %define		my_scriptlet_preun	%{systemd_preun}  %{name}.service
@@ -25,7 +27,7 @@ Requires:
 
 # rcinit
 %else
-%undefine	with_systemd
+%define		with_systemd	0
 
 %define		my_scriptlet_post	/sbin/chkconfig --add %{name}
 %define		my_scriptlet_preun	if [ $1 = 0 ]; then \
@@ -33,7 +35,7 @@ Requires:
 	/sbin/chkconfig --del %{name} \
 fi
 %define		my_scriptlet_postun	if [ $1 != 0 ]; then \
-	/sbin/service ${name} condrestart >/dev/null 2>&1 \
+	/sbin/service %{name} condrestart >/dev/null 2>&1 \
 fi
 
 %endif
@@ -50,44 +52,44 @@ fi
 # =============================================================================
 %prep
 
+%setup -q
 
 # =============================================================================
 # Compilation of the source
 # =============================================================================
 %build
-#%configure
-#make %{?_smp_mflags}
 
 
 # =============================================================================
-# Installation in buildroot
+# Installation from build to buildroot
 # =============================================================================
 %install
 
 rm -rf "${RPM_BUILD_ROOT}"
 mkdir -p "${RPM_BUILD_ROOT}%{?prefix}/"
-rsync -av --exclude .git ./ "%{RPM_BUILD_ROOT}%{?prefix}/"
+rsync -av --exclude .git usr etc "${RPM_BUILD_ROOT}%{?prefix}/"
 
+ls -al
 
 
 # Deploy systemd service
 %if %{with_systemd}
-install -m 755 -d "%{RPM_BUILD_ROOT}%{_unitdir}"
+install -m 755 -d "${RPM_BUILD_ROOT}%{_unitdir}"
 install -m 644 -p goodies/%{name}.service \
-				"%{RPM_BUILD_ROOT}%{_unitdir}/%{name}.service"
+				"${RPM_BUILD_ROOT}%{_unitdir}/%{name}.service"
 
 # Or deploy sysinit service
 %else
-install -m 755 -d "%{RPM_BUILD_ROOT}%{_sysconfdir}/rc.d/init.d"
+install -m 755 -d "${RPM_BUILD_ROOT}%{_sysconfdir}/rc.d/init.d"
 install -m 755 -p goodies/%{name}.rcinit \
-				"%{RPM_BUILD_ROOT}%{_sysconfdir}/rc.d/init.d/%{name}"
+				"${RPM_BUILD_ROOT}%{_sysconfdir}/rc.d/init.d/%{name}"
 
 %endif
 
 # =============================================================================
 # Cleanup of the build environment
 # =============================================================================
-%clean
+#%clean
 
 
 # =============================================================================
@@ -99,7 +101,7 @@ install -m 755 -p goodies/%{name}.rcinit \
 %config %{_sysconfdir}/sysconfig/%{name}
 
 # Standard files
-%{?prefix}/etc/${name}/profiles.d
+%{?prefix}/etc/%{name}/profiles.d
 %{?prefix}/usr/sbin
 
 
