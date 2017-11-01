@@ -1,12 +1,13 @@
 Name:		oom_manager
-Version:	master
+Version:	0.5
 Release:	1%{?dist}
 Summary:	Configure and manage Linux Out-Of-Memory killer
 
 Group:		Application/System
 License:	GPL-3
+BuildArch:	noarch
 URL:		https://github.com/saruspete/oom_manager
-Source0:	https://github.com/saruspete/%{name}/archive/v%{version}.tar.gz
+Source0:	https://github.com/saruspete/%{name}/archive/%{version}.tar.gz
 
 #BuildRequires:
 Requires:	gawk
