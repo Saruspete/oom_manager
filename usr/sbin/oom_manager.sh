@@ -266,6 +266,12 @@ oom_log "[main] System has RAM:$MAXMEM KB / SWP:$MAXSWP KB"
 [[ $EXEC_PREOOM -gt 0 ]] && {
 	oom_log "[main] Will trigger pre-oom below RAM:$EXEC_PREOOMMEMVAL / SWP:$EXEC_PREOOMSWPVAL"
 }
+
+typeset    TRIG_MEM=0 TRIG_SWP=0
+typeset    FREEMEM FREESWP
+typeset -i REM_PCTMEM REM_PCTSWP
+typeset    _PID _ADJ _OADJ
+
 while [[ $LOOP_MAX -eq -1 ]] || [[ $LOOP_COUNT -lt $LOOP_MAX ]] ; do
 
 	read FREEMEM FREESWP < <(oom_getmemoryusage)
@@ -287,8 +293,8 @@ while [[ $LOOP_MAX -eq -1 ]] || [[ $LOOP_COUNT -lt $LOOP_MAX ]] ; do
 			oom_trigger
 		else
 			# Check remaining values before OOM
-			typeset -i REM_PCTMEM=$(( ($FREEMEM - $EXEC_PREOOMMEMVAL) * 100 / $MAXMEM ))
-			typeset -i REM_PCTSWP=$(( ($FREESWP - $EXEC_PREOOMSWPVAL) * 100 / $MAXSWP ))
+			REM_PCTMEM=$(( ($FREEMEM - $EXEC_PREOOMMEMVAL) * 100 / $MAXMEM ))
+			REM_PCTSWP=$(( ($FREESWP - $EXEC_PREOOMSWPVAL) * 100 / $MAXSWP ))
 
 			# Show when near trigger
 			[[ $EXEC_PREOOMMEMVAL -gt 0 ]] && [[ $REM_PCTMEM -le 5 ]] && {
