@@ -22,9 +22,9 @@ Requires:	gawk
 %if 0%{?fedora} || 0%{?rhel} >= 7 || 0%{?suse_version} >= 1140
 %define		with_systemd	1
 
-%define		my_scriptlet_post	%{systemd_post}   %{name}.service
-%define		my_scriptlet_preun	%{systemd_preun}  %{name}.service
-%define		my_scriptlet_postun	%{systemd_postun} %{name}.service
+%define		my_scriptlet_post	%{systemd_post}
+%define		my_scriptlet_preun	%{systemd_preun}
+%define		my_scriptlet_postun	%{systemd_postun}
 
 # rcinit
 %else
