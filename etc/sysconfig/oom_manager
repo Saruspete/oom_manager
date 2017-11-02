@@ -1,13 +1,18 @@
 # Custom configuration for Javamine
 # You can override some variables here
+# Warning: Systemd doesn't do variable expansion....
+#          Only edit the EXEC_ARGS and EXEC_ARGS_ADD
+#          without using variables inside.
 
 # PATH_BASE is the rootdir of the whole javamine tree
 #PATH_BASE="/usr/local"
 
-# EXEC_ARGS and EXEC_ARGS_ADD allows you to change the script args
-# 
-# EXEC_ARGS overrides default parameters
-# EXEC_ARGS_ADD is added to the EXEC_ARGS variable
+#PATH_LOGS=$PATH_BASE/var/log/oom_manager.log
+#PATH_PROFILE=$PATH_BASE/etc/oom_manager/profiles.d
 
-#EXEC_ARGS=""
+# Default args
+EXEC_ARGS="-p /etc/oom_manager/profiles.d -l /var/log/oom_manager.log"
+
+# Uncomment the following line to enable Pre-OOM Trigger when the system
+# has less than 10% free RAM and 30% free SWAP
 #EXEC_ARGS_ADD="-f 10% -F 30%"
