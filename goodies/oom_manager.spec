@@ -102,8 +102,8 @@ install -m 755 -p goodies/%{name}.rcinit \
 %config %{_sysconfdir}/sysconfig/%{name}
 
 # Standard files
-%{?prefix}/etc/%{name}/profiles.d
-%{?prefix}/usr/sbin
+%{?prefix}/etc/%{name}
+%{?prefix}/usr/sbin/*.sh
 
 
 %doc %{_prefix}/usr/share/man/man8
