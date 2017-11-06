@@ -5,7 +5,7 @@ After=syslog.target systemd-user-sessions.service
 [Service]
 EnvironmentFile=/etc/sysconfig/oom_manager
 
-ExecStart=/usr/sbin/oom_manager.sh $EXEC_ARGS $EXEC_ARGS_ADD
+ExecStart=/usr/sbin/oom_manager.sh -d $EXEC_ARGS $EXEC_ARGS_ADD
 
 [Install]
 WantedBy=multi-user.target
