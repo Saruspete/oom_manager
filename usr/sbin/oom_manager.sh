@@ -315,8 +315,7 @@ while [[ $LOOP_MAX -eq -1 ]] || [[ $LOOP_COUNT -lt $LOOP_MAX ]] ; do
 	}
 
 	# Regen the scores
-	oom_getprocess | $BIN_SU -s /bin/bash -c "$PATH_SCORING \"$PATH_PROFILES\"" $USER_SCORING | while read _PID _ADJ; do
-
+	while read _PID _ADJ; do
 		# Get the old adjustement
 		_OADJ="$(oom_getadj $_PID)"
 
@@ -324,7 +323,7 @@ while [[ $LOOP_MAX -eq -1 ]] || [[ $LOOP_COUNT -lt $LOOP_MAX ]] ; do
 		[[ "$_OADJ" != "$_ADJ" ]] && {
 			oom_setadj $_PID $_ADJ
 		}
-	done
+	done < <(oom_getprocess | $BIN_SU -s /bin/bash -c "$PATH_SCORING \"$PATH_PROFILES\"" $USER_SCORING )
 
 	LOOP_COUNT=$LOOP_COUNT+1
 	sleep $LOOP_SLEEP
