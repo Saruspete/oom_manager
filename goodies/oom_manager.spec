@@ -1,5 +1,5 @@
 Name:		oom_manager
-Version:	0.6
+Version:	0.7
 Release:	1%{?dist}
 Summary:	Configure and manage Linux Out-Of-Memory killer
 
