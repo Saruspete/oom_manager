@@ -1,10 +1,10 @@
-OOM-Manager / javamine
+OOM-Manager / javamine :
 ======================
 
 Script to configure and manage Linux Out-Of-Memory killer.
 
 
-Features
+Features :
 --------
   * **Change the oom_score parameter based on patterns**. The default score script provides the following filters :
     * user (UserName)
@@ -20,7 +20,7 @@ Features
   * scoring script is replaceable by any application that reads stdin for processlist and outputs 
 
 
-Packaging
+Packaging :
 ---------
 
 RPM Specfile is provided in *goodies/oom_manager.spec*
